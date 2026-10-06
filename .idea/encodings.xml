@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/meccomerce/api-gateway/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/meccomerce/auth-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/meccomerce/cart-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/meccomerce/common-library/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/meccomerce/inventory-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/meccomerce/order-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/meccomerce/payment-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/meccomerce/product-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/meccomerce/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/meccomerce/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/meccomerce/user-service/src/main/java" charset="UTF-8" />
+  </component>
+</project>

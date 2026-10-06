@@ -1,0 +1,225 @@
+{
+  "rabbit_version": "3.12.0",
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "users": [
+    {
+      "name": "guest",
+      "password_hash": "BM34uL3n2F61Qv2l21SjP2R6",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": [
+        "administrator"
+      ]
+    }
+  ],
+  "permissions": [
+    {
+      "user": "guest",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "ecommerce.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "ecommerce.events.dlx",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "inventory.order-created.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "ecommerce.events.dlx",
+        "x-dead-letter-routing-key": "inventory.order-created.dlq"
+      }
+    },
+    {
+      "name": "order.inventory-reserved.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "order.inventory-rejected.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "order.payment-completed.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "ecommerce.events.dlx",
+        "x-dead-letter-routing-key": "order.payment-completed.dlq"
+      }
+    },
+    {
+      "name": "order.payment-failed.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "ecommerce.events.dlx",
+        "x-dead-letter-routing-key": "order.payment-failed.dlq"
+      }
+    },
+    {
+      "name": "auth.user-registered.email.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "order.order-confirmed.email.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "payment.payment-failed.email.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "inventory.order-created.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "order.payment-completed.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "order.payment-failed.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "ecommerce.events",
+      "vhost": "/",
+      "destination": "inventory.order-created.queue",
+      "destination_type": "queue",
+      "routing_key": "order.created",
+      "arguments": {}
+    },
+    {
+      "source": "ecommerce.events",
+      "vhost": "/",
+      "destination": "order.inventory-reserved.queue",
+      "destination_type": "queue",
+      "routing_key": "inventory.reserved",
+      "arguments": {}
+    },
+    {
+      "source": "ecommerce.events",
+      "vhost": "/",
+      "destination": "order.inventory-rejected.queue",
+      "destination_type": "queue",
+      "routing_key": "inventory.rejected",
+      "arguments": {}
+    },
+    {
+      "source": "ecommerce.events",
+      "vhost": "/",
+      "destination": "order.payment-completed.queue",
+      "destination_type": "queue",
+      "routing_key": "payment.completed",
+      "arguments": {}
+    },
+    {
+      "source": "ecommerce.events",
+      "vhost": "/",
+      "destination": "order.payment-failed.queue",
+      "destination_type": "queue",
+      "routing_key": "payment.failed",
+      "arguments": {}
+    },
+    {
+      "source": "ecommerce.events",
+      "vhost": "/",
+      "destination": "auth.user-registered.email.queue",
+      "destination_type": "queue",
+      "routing_key": "user.registered",
+      "arguments": {}
+    },
+    {
+      "source": "ecommerce.events",
+      "vhost": "/",
+      "destination": "order.order-confirmed.email.queue",
+      "destination_type": "queue",
+      "routing_key": "order.confirmed",
+      "arguments": {}
+    },
+    {
+      "source": "ecommerce.events",
+      "vhost": "/",
+      "destination": "payment.payment-failed.email.queue",
+      "destination_type": "queue",
+      "routing_key": "payment.failed",
+      "arguments": {}
+    },
+    {
+      "source": "ecommerce.events.dlx",
+      "vhost": "/",
+      "destination": "inventory.order-created.dlq",
+      "destination_type": "queue",
+      "routing_key": "inventory.order-created.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "ecommerce.events.dlx",
+      "vhost": "/",
+      "destination": "order.payment-completed.dlq",
+      "destination_type": "queue",
+      "routing_key": "order.payment-completed.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "ecommerce.events.dlx",
+      "vhost": "/",
+      "destination": "order.payment-failed.dlq",
+      "destination_type": "queue",
+      "routing_key": "order.payment-failed.dlq",
+      "arguments": {}
+    }
+  ]
+}

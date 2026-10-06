@@ -1,0 +1,71 @@
+server:
+  port: ${GATEWAY_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://127.0.0.1:8081}
+          predicates:
+            - Path=/api/auth/**
+
+        - id: user-service
+          uri: ${USER_SERVICE_URL:http://127.0.0.1:8082}
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - JwtAuthenticationFilter
+
+        - id: product-service
+          uri: ${PRODUCT_SERVICE_URL:http://127.0.0.1:8083}
+          predicates:
+            - Path=/api/products/**
+          filters:
+            - name: JwtAuthenticationFilter
+              args:
+                optional: true
+
+        - id: cart-service
+          uri: ${CART_SERVICE_URL:http://127.0.0.1:8084}
+          predicates:
+            - Path=/api/cart/**
+          filters:
+            - JwtAuthenticationFilter
+
+        - id: order-service
+          uri: ${ORDER_SERVICE_URL:http://127.0.0.1:8085}
+          predicates:
+            - Path=/api/orders/**
+          filters:
+            - JwtAuthenticationFilter
+
+        - id: inventory-service
+          uri: ${INVENTORY_SERVICE_URL:http://127.0.0.1:8086}
+          predicates:
+            - Path=/api/inventory/**
+          filters:
+            - name: JwtAuthenticationFilter
+              args:
+                optional: true
+
+        - id: payment-service
+          uri: ${PAYMENT_SERVICE_URL:http://127.0.0.1:8087}
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - JwtAuthenticationFilter
+
+jwt:
+  public-key-base64: ${JWT_PUBLIC_KEY_BASE64:LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUF0STRaQTNrNzgycWx2Z28yRWlkTgpGMXFISVNiOUFVODhPeWtlYjhlNDNDMjhvcktZekswRkRkYTdZSWEvZEtJVHluM0JLMUlTVUZhUnEySFlkSGZCClhnNmc1R0U1MFQvSnNtWFZEVjFkdHRTSHhCdVkvVjBlM09iVElnR3RoU2lFd2JQN2dWTjVpVXVXNG9GK0FIVFUKN3orRFAxeTVENjBua1VoNGNKVEVaZndoL09YS28vVzRveVo4ZHJ5S0pFbmgzUzhKTU5wcER3VEdXcytZOHdtagpHM3Q3enhsUUx2QUNtblJDZTlPc3VYMHRydjVuNVRpV1Q3Rzc5bWgwVzVLSWZJWjZsZkRKSGdnaXdqalNSaWVGCnFBSjM1R3B0VytGSzI3N09mWDB4a29HZXgvLy9XWU5ZNGZMVUFZMjh5OExLTUl6OFR3YXZjQ0tIbXlLajlYMWgKclFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -1,0 +1,223 @@
+===============================================================================
+                       TRENDORA BACKEND SYSTEM SUMMARY
+===============================================================================
+
+Project Name: TRENDORA E-Commerce Microservices Backend
+Monorepo Directory: /Users/ashishkumarmishra/Desktop/clg project/meccomerce
+Status: FULLY IMPLEMENTED & VERIFIED (BUILD SUCCESS)
+
+===============================================================================
+1. ARCHITECTURE OVERVIEW
+===============================================================================
+
+The backend is built as a production-grade microservices architecture using Java 17, 
+Spring Boot 3.3.5, and Spring Cloud 2023.0.3.
+
+Core Principles Followed:
+- 8 Independent Spring Boot Applications + 1 Shared Common Library
+- Single Entry Point: API Gateway (Port 8080) for all frontend communications (/api/*)
+- Asymmetric RSA 2048-bit JWT Signing & Verification
+- Strict Database Isolation per Service (No cross-database queries or shared entities)
+- Asynchronous Event-Driven Architecture using RabbitMQ (Topic Exchange)
+- Server-Side PayPal Payment Verification (No frontend payment trust)
+- Embedded Asynchronous Email Consumers (No redundant Notification service)
+- Flyway Database Migrations for versioned schema management
+- Multi-stage Dockerfiles & Docker Compose orchestration
+
+===============================================================================
+2. SERVICE & PORT ALLOCATION MATRIX
+===============================================================================
+
+Service Name       Port     Database        Responsibilities
+-------------------------------------------------------------------------------
+api-gateway        8080     None            Central entry point, JWT validation,
+                                            CORS, Rate Limiting, Correlation ID,
+                                            Route-level authorization.
+
+auth-service       8081     auth_db         Registration, Login, Password Hashing 
+                                            (BCrypt), RSA JWT generation, Refresh 
+                                            tokens, Password reset workflow.
+
+user-service       8082     user_db         User profile details, Address book 
+                                            management, Admin user management.
+
+product-service    8083     product_db      Product catalog, Categories, Product 
+                                            images, Searching, Multi-field filter & sort.
+
+cart-service       8084     cart_db         Active shopping cart per user, Cart items,
+                                            Quantity & Variant (size/color) updates.
+
+order-service      8085     order_db        Order creation, Price snapshotting, Order
+                                            lifecycle state machine, Saga orchestration.
+
+inventory-service  8086     inventory_db    Available & Reserved stock levels, 
+                                            Stock reservation Saga event processing,
+                                            Admin stock adjustments.
+
+payment-service    8087     payment_db      Server-side PayPal integration, Payment
+                                            verification, Transactions, Admin refunds.
+
+PostgreSQL         5432     Shared Instance Holds isolated logical DBs: auth_db, user_db,
+                                            product_db, cart_db, order_db, inventory_db, 
+                                            payment_db.
+
+RabbitMQ           5672     AMQP Broker     Topic Exchange: ecommerce.events
+                   15672    Management UI   Web UI for queue inspection (guest/guest).
+
+===============================================================================
+3. DATABASE SCHEMAS & OWNERSHIP
+===============================================================================
+
+- auth_db:
+  * roles (id, name)
+  * users (id, name, email, password_hash, enabled, created_at)
+  * user_roles (user_id, role_id)
+  * refresh_tokens (id, user_id, token, expiry_date, revoked, created_at)
+  * password_reset_tokens (id, user_id, token, expiry_date, used, created_at)
+
+- user_db:
+  * user_profiles (id, user_id, email, name, phone, avatar_url, role, created_at, updated_at)
+  * addresses (id, user_id, street, city, state, zip_code, country, is_default, created_at, updated_at)
+
+- product_db:
+  * categories (id, name, slug, description, parent_id, created_at, updated_at)
+  * products (id, sku, name, description, price, original_price, brand, material, category_id, gender, sizes, colors, is_featured, is_active, created_at, updated_at)
+  * product_images (id, product_id, url, is_primary, display_order)
+
+- cart_db:
+  * carts (id, user_id, created_at, updated_at)
+  * cart_items (id, cart_id, product_id, quantity, size, color, created_at, updated_at)
+
+- order_db:
+  * orders (id, order_number, user_id, status, payment_status, total_amount, shipping_fee, tax, recipient_name, phone, street, city, state, zip_code, country, payment_method, created_at, updated_at)
+  * order_items (id, order_id, product_id, product_name, product_sku, price_at_purchase, quantity, size, color, image_url)
+  * order_status_history (id, order_id, previous_status, new_status, changed_by, comment, created_at)
+  * outbox_events (id, event_id, event_type, aggregate_type, aggregate_id, payload, created_at, published_at, status)
+
+- inventory_db:
+  * inventory_items (id, product_id, available_quantity, reserved_quantity, created_at, updated_at)
+  * stock_reservations (id, order_id, product_id, quantity, status, created_at)
+
+- payment_db:
+  * payments (id, payment_number, order_id, user_id, amount, currency, payment_method, provider, provider_transaction_id, status, created_at, updated_at)
+  * payment_transactions (id, payment_id, transaction_type, status, raw_response, created_at)
+  * refunds (id, payment_id, refund_number, amount, reason, status, created_at)
+
+===============================================================================
+4. REST API ENDPOINTS & ROUTING
+===============================================================================
+
+All requests flow through Gateway at http://localhost:8080:
+
+Auth Endpoints:
+  POST   /api/auth/register          Register new user (default ROLE_USER)
+  POST   /api/auth/login             Authenticate user & return RSA JWT + Refresh token
+  POST   /api/auth/refresh           Obtain new access token using refresh token
+  POST   /api/auth/logout            Revoke refresh token
+  POST   /api/auth/forgot-password   Trigger password reset email token
+  POST   /api/auth/reset-password    Reset password using valid token
+
+User Profile Endpoints:
+  GET    /api/users/profile          Get authenticated user profile
+  PUT    /api/users/profile          Update authenticated user profile
+  GET    /api/users/addresses        Get user addresses
+  POST   /api/users/addresses        Add address
+  DELETE /api/users/addresses/{id}   Delete address
+  GET    /api/users                  List all users (Admin only)
+  PUT    /api/users/{id}/role        Update user role (Admin only)
+  DELETE /api/users/{id}             Delete user profile (Admin only)
+
+Product Catalog Endpoints:
+  GET    /api/products               List products with search & filters
+  GET    /api/products/{id}          Get product by ID
+  POST   /api/products               Create product (Admin only)
+  PUT    /api/products/{id}          Update product (Admin only)
+  DELETE /api/products/{id}          Delete product (Admin only)
+  GET    /api/products/categories    List categories
+  POST   /api/products/categories    Create category (Admin only)
+
+Cart Endpoints:
+  GET    /api/cart                   Get authenticated user's cart
+  POST   /api/cart/items             Add item to cart
+  PUT    /api/cart/items/{itemId}    Update item quantity
+  DELETE /api/cart/items/{itemId}    Remove item from cart
+  DELETE /api/cart                   Clear cart
+
+Order Endpoints:
+  POST   /api/orders                 Create order (with price snapshot)
+  GET    /api/orders/my-orders       Get authenticated user's order history
+  GET    /api/orders/{id}            Get order by ID (Owner or Admin)
+  GET    /api/orders                 List all orders (Admin only)
+  PUT    /api/orders/{id}/status     Update order status with transition validation (Admin)
+
+Payment Endpoints:
+  POST   /api/payments/create        Create payment order (returns PayPal Order ID)
+  POST   /api/payments/verify        Server-side PayPal payment verification
+  POST   /api/payments/refund        Process refund (Admin only)
+
+Inventory Endpoints:
+  GET    /api/inventory/{productId}  Get stock level for product
+  POST   /api/inventory/adjust       Adjust stock level (Admin only)
+
+===============================================================================
+5. RABBITMQ EVENT ARCHITECTURE
+===============================================================================
+
+Topic Exchange: ecommerce.events
+
+Routing Key                       Publisher            Consumer Queue / Handler
+-------------------------------------------------------------------------------
+user.registered                   auth-service         auth.user-registered.email.queue
+order.created                     order-service        inventory.order-created.queue
+inventory.reserved                inventory-service    order.inventory-reserved.queue
+inventory.rejected                inventory-service    order.inventory-rejected.queue
+payment.completed                 payment-service      order.payment-completed.queue
+payment.failed                    payment-service      order.payment-failed.queue
+order.confirmed                   order-service        order.order-confirmed.email.queue
+order.cancelled                   order-service        inventory.order-cancelled.release.queue
+refund.completed                  payment-service      payment.refund-completed.email.queue
+
+===============================================================================
+6. SAGA WORKFLOWS
+===============================================================================
+
+Checkout & Stock Reservation Saga:
+  Client -> Gateway -> Order Service (Create order status PENDING)
+          -> Publish ORDER_CREATED
+          -> RabbitMQ -> Inventory Service (Verify stock)
+          -> If stock available: Reserve stock & Publish INVENTORY_RESERVED
+          -> If stock insufficient: Publish INVENTORY_REJECTED
+          -> Order Service receives event and updates status to PAYMENT_PENDING or CANCELLED.
+
+Payment & Order Confirmation Saga:
+  Client -> Gateway -> Payment Service -> PayPal API verification
+          -> If verified: Update status to PAID & Publish PAYMENT_COMPLETED
+          -> Order Service receives event: Updates status to CONFIRMED & Publishes ORDER_CONFIRMED
+          -> OrderEmailConsumer receives ORDER_CONFIRMED & sends confirmation email asynchronously.
+
+Compensating Workflow on Payment Failure:
+  Payment verification fails -> Publish PAYMENT_FAILED -> Order Service cancels order
+  -> Publish ORDER_CANCELLED -> Inventory Service releases reserved stock back to available quantity.
+
+===============================================================================
+7. HOW TO BUILD & RUN
+===============================================================================
+
+1. Build all modules:
+   $ cd "/Users/ashishkumarmishra/Desktop/clg project/meccomerce"
+   $ ./mvnw clean compile
+
+2. Package all microservice JARs:
+   $ ./mvnw clean package -DskipTests
+
+3. Run full infrastructure with Docker Compose:
+   $ docker compose up --build
+
+4. Verify services:
+   - Gateway Health: http://localhost:8080/actuator/health
+   - RabbitMQ Management: http://localhost:15672 (guest / guest)
+   - Swagger OpenAPI UI: http://localhost:8080/swagger-ui.html
+
+===============================================================================
+Summary generated on: 2026-10-03
+===============================================================================

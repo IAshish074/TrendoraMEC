@@ -1,0 +1,23 @@
+package com.ashish.ecommerce.common.exception;
+
+import lombok.Getter;
+
+@Getter
+public class ApiException extends RuntimeException {
+    private final int statusCode;
+
+    public ApiException(String message, int statusCode) {
+        super(message);
+        this.statusCode = statusCode;
+    }
+
+    public ApiException(int statusCode, String message) {
+        super(message);
+        this.statusCode = statusCode;
+    }
+
+    public ApiException(String message) {
+        super(message);
+        this.statusCode = 500;
+    }
+}

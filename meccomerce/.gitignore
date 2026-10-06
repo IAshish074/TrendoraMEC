@@ -1,0 +1,21 @@
+# Target & Build outputs
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Environment & Secrets
+.env
+*.pem
+*.key
+*.p12
+
+# IDE & System
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Maven wrapper
+.mvn/wrapper/maven-wrapper.jar
