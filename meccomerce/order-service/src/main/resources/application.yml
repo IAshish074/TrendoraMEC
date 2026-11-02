@@ -36,6 +36,11 @@ spring:
     virtual-host: ${RABBITMQ_VHOST:/}
     ssl:
       enabled: ${RABBITMQ_SSL_ENABLED:false}
+    listener:
+      simple:
+        auto-startup: ${RABBITMQ_AUTO_STARTUP:true}
+        missing-queues-fatal: false
+        recovery-interval: 10000ms
   mail:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:587}

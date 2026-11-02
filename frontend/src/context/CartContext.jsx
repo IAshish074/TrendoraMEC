@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback } from "react";
 import cartApi from "../api/cartApi";
+import productApi from "../api/productApi";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "sonner";
 
@@ -17,7 +18,7 @@ export const CartProvider = ({ children }) => {
         const local = localStorage.getItem("guest_cart");
         const items = local ? JSON.parse(local) : [];
         const totalPrice = items.reduce(
-          (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
+          (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
           0
         );
         setCart({ items, totalPrice });
@@ -31,12 +32,39 @@ export const CartProvider = ({ children }) => {
     try {
       const data = await cartApi.getCart();
       if (data) {
-        const items = data.items || data.cartItems || data.products || [];
-        const totalPrice =
-          data.totalPrice ??
-          items.reduce((sum, i) => sum + (i.price || 0) * (i.quantity || 1), 0);
-        setCart({ items, totalPrice });
+        const rawItems = data.items || data.cartItems || data.products || [];
+        const enrichedItems = await Promise.all(
+          rawItems.map(async (item) => {
+            if (item.name && item.price && item.price > 0) {
+              return item;
+            }
+            try {
+              const product = await productApi.getProduct(item.productId);
+              return {
+                ...item,
+                name: item.name || product?.name || "Product Item",
+                price: Number(item.price || product?.price || 10),
+                image: item.image || product?.images?.[0]?.url || "https://picsum.photos/150",
+              };
+            } catch {
+              return {
+                ...item,
+                name: item.name || "Product Item",
+                price: Number(item.price || 10),
+                image: item.image || "https://picsum.photos/150",
+              };
+            }
+          })
+        );
+
+        const totalPrice = enrichedItems.reduce(
+          (sum, i) => sum + (Number(i.price) || 0) * (Number(i.quantity) || 1),
+          0
+        );
+        setCart({ items: enrichedItems, totalPrice });
       }
+    } catch (err) {
+      console.error("Failed to fetch cart:", err);
     } finally {
       setIsLoading(false);
     }

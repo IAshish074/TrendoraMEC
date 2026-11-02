@@ -54,21 +54,59 @@ const CheckOut = () => {
 
     setIsCreatingOrder(true);
     try {
-      const orderPayload = {
-        userEmail: user?.email || "",
-        userName: `${shippingData.firstName} ${shippingData.lastName}`,
-        shippingAddress: shippingData,
-        paymentMethod: "PayPal",
-        totalPrice: cart.totalPrice,
-        orderItems: cart.items.map((item) => ({
-          productId: item.productId || item.id,
-          name: item.name || item.product?.name || "Product",
+      const recipientName =
+        `${shippingData.firstName || ""} ${shippingData.lastName || ""}`.trim() ||
+        user?.name ||
+        "Customer";
+
+      const formattedShippingAddress = {
+        recipientName: recipientName,
+        phone: shippingData.phone || "0000000000",
+        street: shippingData.address || "Street Address",
+        city: shippingData.city || "City",
+        state: shippingData.state || "N/A",
+        zipCode: shippingData.postalCode || "00000",
+        country: shippingData.country || "Country",
+        // Aliases for compatibility
+        name: recipientName,
+        fullName: recipientName,
+        address: shippingData.address || "",
+        postalCode: shippingData.postalCode || "",
+        firstName: shippingData.firstName || "",
+        lastName: shippingData.lastName || "",
+      };
+
+      const formattedItems = cart.items.map((item) => {
+        const prodId = Number(item.productId || item.id || 1);
+        const prodName = item.name || item.product?.name || "Product Item";
+        const unitPrice = Math.max(1, Number(item.price || item.product?.price || 10));
+        const qty = Math.max(1, Number(item.quantity || 1));
+
+        return {
+          productId: prodId,
+          productName: prodName,
+          priceAtPurchase: unitPrice,
+          quantity: qty,
           size: item.size || "M",
           color: item.color || "Black",
-          quantity: item.quantity || 1,
-          price: item.price || 0,
-          image: item.image || item.product?.images?.[0]?.url || "https://picsum.photos/150",
-        })),
+          imageUrl: item.image || item.product?.images?.[0]?.url || "https://picsum.photos/150",
+          // Aliases for compatibility
+          id: prodId,
+          name: prodName,
+          price: unitPrice,
+        };
+      });
+
+      const orderPayload = {
+        items: formattedItems,
+        orderItems: formattedItems,
+        shippingAddress: formattedShippingAddress,
+        shippingFee: 0,
+        tax: 0,
+        paymentMethod: "PAYPAL",
+        userEmail: user?.email || "",
+        userName: recipientName,
+        totalPrice: cart.totalPrice || formattedItems.reduce((s, i) => s + i.priceAtPurchase * i.quantity, 0),
       };
 
       const createdOrder = await orderApi.createOrder(orderPayload);
@@ -78,12 +116,29 @@ const CheckOut = () => {
         throw new Error("Backend did not return a valid order ID.");
       }
 
+      // Initialize payment record on payment-service
+      try {
+        await paymentApi.createPayment({
+          orderId: Number(orderId),
+          amount: Number(cart.totalPrice || orderPayload.totalPrice || 10),
+          currency: "USD",
+          paymentMethod: "PAYPAL",
+        });
+      } catch (payErr) {
+        console.warn("Payment initiation warning (non-fatal):", payErr);
+      }
+
       setRealOrderId(orderId);
       toast.success("Order created! Complete your payment with PayPal below.");
     } catch (err) {
-      toast.error(
-        err.response?.data?.message || err.message || "Failed to create order. Please try again."
-      );
+      const validationDetails = err.response?.data?.data;
+      let errorMsg = err.response?.data?.message || err.message;
+      if (Array.isArray(validationDetails) && validationDetails.length > 0) {
+        errorMsg = validationDetails
+          .map((d) => (d.field ? `${d.field}: ${d.message}` : d.message))
+          .join(" | ");
+      }
+      toast.error(errorMsg || "Failed to create order. Please try again.");
     } finally {
       setIsCreatingOrder(false);
     }
@@ -93,8 +148,9 @@ const CheckOut = () => {
     setIsVerifyingPayment(true);
     try {
       const verificationResponse = await paymentApi.verifyPayment({
+        orderId: Number(realOrderId),
+        paypalOrderId: details.id,
         paymentId: details.id,
-        orderId: realOrderId,
         amount: cart.totalPrice,
         status: details.status,
       });

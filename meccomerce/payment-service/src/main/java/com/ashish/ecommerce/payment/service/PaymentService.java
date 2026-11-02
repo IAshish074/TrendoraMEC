@@ -12,6 +12,7 @@ import com.ashish.ecommerce.payment.repository.PaymentTransactionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -95,7 +96,21 @@ public class PaymentService {
     @Transactional
     public PaymentResponse verifyPayment(Long userId, VerifyPaymentRequest request) {
         Payment payment = paymentRepository.findByOrderId(request.getOrderId())
-                .orElseThrow(() -> new ApiException("Payment record not found for order ID: " + request.getOrderId(), 404));
+                .orElseGet(() -> {
+                    String paymentNumber = "PAY-" + System.currentTimeMillis() + "-" + java.util.UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+                    Payment newPayment = Payment.builder()
+                            .paymentNumber(paymentNumber)
+                            .orderId(request.getOrderId())
+                            .userId(userId)
+                            .amount(BigDecimal.ZERO)
+                            .currency("USD")
+                            .paymentMethod("PAYPAL")
+                            .provider("PAYPAL")
+                            .providerTransactionId(request.getPaypalOrderId())
+                            .status(PaymentStatus.PENDING)
+                            .build();
+                    return paymentRepository.save(newPayment);
+                });
 
         // Idempotency check: if already paid, return
         if (payment.getStatus() == PaymentStatus.PAID) {

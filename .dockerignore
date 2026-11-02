@@ -1,0 +1,9 @@
+.git
+.DS_Store
+**/node_modules
+meccomerce/.env
+meccomerce/**/target/classes
+meccomerce/**/target/generated-sources
+meccomerce/**/target/maven-status
+meccomerce/**/target/test-classes
+meccomerce/**/target/surefire-reports

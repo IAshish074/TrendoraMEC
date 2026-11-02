@@ -1,2 +1,42 @@
+# Build and package outputs
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.original
+
+# Frontend build & dependencies
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+dist-ssr/
+.vite/
+
+# Environment files and secrets (NEVER commit secrets!)
+.env
+.env.*
+**/.env
+**/.env.*
+*.pem
+*.key
+*.p12
+
+# Logs & temp
+*.log
+logs/
 *.crdownload
 .DS_Store
+**/.DS_Store
+
+# IDE and Editor files
+.idea/
+*.iml
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

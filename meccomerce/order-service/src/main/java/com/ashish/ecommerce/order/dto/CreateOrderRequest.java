@@ -1,5 +1,6 @@
 package com.ashish.ecommerce.order.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -19,6 +20,7 @@ public class CreateOrderRequest {
 
     @NotEmpty(message = "Order must contain at least one item")
     @Valid
+    @JsonAlias({"items", "orderItems", "cartItems", "products"})
     private List<CreateOrderItemRequest> items;
 
     @NotNull(message = "Shipping address is required")
